@@ -47,6 +47,9 @@ class LRUReplacer : public Replacer {
 
  private:
   // TODO(student): implement me!
+  size_t size_; //缓冲池总的页框的数量
+  std::vector<std::list<frame_id_t>::iterator> frames_; //对于pinned的frame存储一个nullptr
+  std::list<frame_id_t> list_unpinned_frames_; //包含所有unpinned的frame
 };
 
 }  // namespace bustub
