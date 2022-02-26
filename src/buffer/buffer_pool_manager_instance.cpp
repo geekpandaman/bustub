@@ -60,6 +60,7 @@ bool BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) {
 }
 
 void BufferPoolManagerInstance::FlushAllPgsImp() {
+  std::lock_guard<std::mutex> guard(latch_);
   for(size_t i = 0;i!=pool_size_;i++){
     if(pages_[i].is_dirty_){
       this->disk_manager_->WritePage(pages_[i].page_id_,pages_[i].data_);
@@ -74,6 +75,8 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
   // 2.   Pick a victim page P from either the free list or the replacer. Always pick from the free list first.
   // 3.   Update P's metadata, zero out memory and add P to the page table.
   // 4.   Set the page ID output parameter. Return a pointer to P.
+  //guard在构造时自动加锁，在析构时解锁，就避免了因为异常处理导致未解锁
+  std::lock_guard<std::mutex> guard(latch_);
   page_id_t new_pg_id = AllocatePage();
   Page* frame = nullptr;
   frame_id_t frame_id;
@@ -115,6 +118,7 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
   //pin_count++?
   //拿出frame的逻辑是一样的
   //相比NewPgImp拿出之后要从磁盘读
+  std::lock_guard<std::mutex> guard(latch_);
   Page* frame = nullptr;
   if(page_table_.count(page_id)){
     //TODO 是否要pincount++
@@ -158,6 +162,7 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
   // 1.   If P does not exist, return true.
   // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
+  std::lock_guard<std::mutex> guard(latch_);
   if(!page_table_.count(page_id))
     return true;
   DeallocatePage(page_id);
@@ -179,6 +184,7 @@ bool BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) {
   //会在pincount为0的时候被调用
   //unpin的时候不刷盘
   //dirty参数表示这个page在pin住的过程中有没有被修改
+  std::lock_guard<std::mutex> guard(latch_);
   if(!page_table_.count(page_id))
     return false;
   frame_id_t frame_id = page_table_[page_id];

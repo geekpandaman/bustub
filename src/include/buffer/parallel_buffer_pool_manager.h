@@ -86,5 +86,11 @@ class ParallelBufferPoolManager : public BufferPoolManager {
    * Flushes all the pages in the buffer pool to disk.
    */
   void FlushAllPgsImp() override;
+  //存储bpm实例的指针数组
+  BufferPoolManager** bpm_instances_;
+  size_t num_instances_;
+  size_t pool_size_;
+  //用于轮询bpm_instances的首个下标
+  size_t starting_index_ = 0;
 };
 }  // namespace bustub
