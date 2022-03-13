@@ -102,6 +102,7 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
   //设置page_tables_,pin住页面返回
   frame->page_id_ = new_pg_id;
   page_table_[new_pg_id] = frame_id;
+  frame->pin_count_ = 1;
   replacer_->Pin(frame_id);
   return frame;
 }
@@ -125,6 +126,7 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
     frame_id_t frame_id=page_table_[page_id];
     replacer_->Pin(frame_id);
     frame = &pages_[frame_id];
+    frame->pin_count_++;
   }else{
     //这段代码和NewPgImp中的逻辑是一样的
     frame_id_t frame_id;
@@ -150,6 +152,7 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
     frame->page_id_ = page_id;
     page_table_[page_id] = frame_id;
     replacer_->Pin(frame_id);
+    frame->pin_count_=1;
     //从磁盘读
     disk_manager_->ReadPage(page_id,frame->data_);
   }
@@ -188,10 +191,13 @@ bool BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) {
   if(!page_table_.count(page_id))
     return false;
   frame_id_t frame_id = page_table_[page_id];
-  // if(pages_[frame_id].pin_count_<=0)
-  //   return false;
-  pages_[frame_id].is_dirty_ = is_dirty;
-  replacer_->Unpin(frame_id);
+  if(pages_[frame_id].pin_count_<=0)
+    return false;
+  if(is_dirty)
+    pages_[frame_id].is_dirty_ = is_dirty;
+  pages_[frame_id].pin_count_--;
+  if(pages_[frame_id].pin_count_==0)
+    replacer_->Unpin(frame_id);
   return true;
 }
 
