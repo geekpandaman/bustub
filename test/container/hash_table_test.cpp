@@ -24,7 +24,9 @@ namespace bustub {
 // NOLINTNEXTLINE
 
 // NOLINTNEXTLINE
-TEST(HashTableTest, DISABLED_SampleTest) {
+// GDB entry:
+//bustub::HashTableTest_SampleTest_Test::TestBody
+TEST(HashTableTest, SampleTest) {
   auto *disk_manager = new DiskManager("test.db");
   auto *bpm = new BufferPoolManagerInstance(50, disk_manager);
   ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
@@ -77,6 +79,15 @@ TEST(HashTableTest, DISABLED_SampleTest) {
   }
 
   ht.VerifyIntegrity();
+
+  for(size_t i = 0;i!=5;i++){
+    std::vector<int> res;
+    ht.GetValue(nullptr, i, &res);
+    if(i==0)
+      EXPECT_EQ(1,res.size());
+    else
+      EXPECT_EQ(2,res.size());
+  }
 
   // look for a key that does not exist
   std::vector<int> res;
