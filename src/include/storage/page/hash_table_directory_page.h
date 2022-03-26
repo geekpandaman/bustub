@@ -33,6 +33,8 @@ namespace bustub {
  */
 class HashTableDirectoryPage {
  public:
+  HashTableDirectoryPage();
+  
   /**
    * @return the page ID of this page
    */
@@ -165,6 +167,7 @@ class HashTableDirectoryPage {
    * Gets the high bit corresponding to the bucket's local depth.
    * This is not the same as the bucket index itself.  This method
    * is helpful for finding the pair, or "split image", of a bucket.
+   * 返回一个掩码帮助split的时候划分, 唯一一位1在下一个划分的位上
    *
    * @param bucket_idx bucket index to lookup
    * @return the high bit corresponding to the bucket's local depth
@@ -190,6 +193,11 @@ class HashTableDirectoryPage {
   page_id_t page_id_;
   lsn_t lsn_;
   uint32_t global_depth_{0};
+  uint32_t global_depth_mask_ = 0;
+  //size_==std::pow(2,global_depth)
+  uint32_t size_ = 1;
+  //最多有512个桶，最多的global_depth是9，因此local_depth最大是8
+  //桶中的哈希值在local_depth位LSB上是一样的
   uint8_t local_depths_[DIRECTORY_ARRAY_SIZE];
   page_id_t bucket_page_ids_[DIRECTORY_ARRAY_SIZE];
 };

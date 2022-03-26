@@ -86,6 +86,8 @@ class ReaderWriterLatch {
   }
 
  private:
+  //mutex_仅用于对锁中的信号量和计数器的互斥访问
+  //wait()函数，等待一个信号量的同时释放一个本线程持有的锁，获得信号之后上锁
   mutex_t mutex_;
   cond_t writer_;
   cond_t reader_;

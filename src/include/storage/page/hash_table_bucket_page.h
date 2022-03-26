@@ -40,6 +40,7 @@ class HashTableBucketPage {
   // Delete all constructor / destructor to ensure memory safety
   HashTableBucketPage() = delete;
 
+  void Init();
   /**
    * Scan the bucket and collect values that have the matching key
    *
@@ -138,10 +139,15 @@ class HashTableBucketPage {
   void PrintBucket();
 
  private:
+  // current size
+  //加入数据成员可能会导致空间溢出
+  uint32_t num_readable_;
   //  For more on BUCKET_ARRAY_SIZE see storage/page/hash_table_page_defs.h
   char occupied_[(BUCKET_ARRAY_SIZE - 1) / 8 + 1];
   // 0 if tombstone/brand new (never occupied), 1 otherwise.
   char readable_[(BUCKET_ARRAY_SIZE - 1) / 8 + 1];
+  //长度为0的数组，不占用数据成员存储空间，由分配的额外大小决定
+  //相比使用数组指针的好处 1.节省一个指针的空间 2.只需要一次free
   MappingType array_[0];
 };
 
