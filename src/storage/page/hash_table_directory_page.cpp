@@ -38,6 +38,7 @@ void HashTableDirectoryPage::IncrGlobalDepth() {
   assert(global_depth_<9);
   for(size_t i = 0;i!=size_;i++){
     bucket_page_ids_[i|1<<global_depth_] = bucket_page_ids_[i];
+    local_depths_[i|1<<global_depth_] = local_depths_[i];
   }
   global_depth_mask_ |= 1<<global_depth_;
   global_depth_++;

@@ -104,11 +104,15 @@ bool HASH_TABLE_TYPE::Insert(Transaction *transaction, const KeyType &key, const
   HashTableDirectoryPage* dir_page = FetchDirectoryPage();
   auto buc_page_id = KeyToPageId(key,dir_page);
   HASH_TABLE_BUCKET_TYPE* buc_page = FetchBucketPage(buc_page_id);
-
+  bool split_insert = false;
   bool success = buc_page->Insert(key,value,comparator_);
-
+  if(!success&&buc_page->IsFull()){
+    split_insert = true;
+  }
   buffer_pool_manager_->UnpinPage(directory_page_id_,false,nullptr);
   buffer_pool_manager_->UnpinPage(buc_page_id,success,nullptr);
+  if(split_insert)
+    success = SplitInsert(transaction,key,value);
   return success;
 }
 
@@ -117,7 +121,6 @@ bool HASH_TABLE_TYPE::SplitInsert(Transaction *transaction, const KeyType &key, 
   HashTableDirectoryPage* dir_page = FetchDirectoryPage();
   auto buc_page_id = KeyToPageId(key,dir_page);
   HASH_TABLE_BUCKET_TYPE* buc_page = FetchBucketPage(buc_page_id);
-  //满了就分裂，不判断是否存在重复
   //可能会存在多次分裂也分裂不出空间的情况，因此需要循环分裂
   while(buc_page->IsFull()){
     //split
@@ -126,7 +129,12 @@ bool HASH_TABLE_TYPE::SplitInsert(Transaction *transaction, const KeyType &key, 
       dir_page->IncrGlobalDepth();
     }
     uint32_t split_mask = dir_page->GetLocalHighBit(buc_idx);
-    uint32_t split_buc_idx = buc_idx|(1<<split_mask);
+    //获取split_image
+    uint32_t split_buc_idx = buc_idx^split_mask;
+    if(dir_page->GetBucketPageId(buc_idx)!=dir_page->GetBucketPageId(split_buc_idx)){
+      LOG_ERROR("Split: Get wrong split image!");
+      LOG_ERROR("Split: buc_idx %d point at %d,split_buc_idx %d point at %d",buc_idx,dir_page->GetBucketPageId(buc_idx),split_buc_idx,dir_page->GetBucketPageId(split_buc_idx));
+    }
     page_id_t split_buc_page_id = INVALID_PAGE_ID;
     Page* split_page = buffer_pool_manager_->NewPage(&split_buc_page_id,nullptr);
     dir_page->SetBucketPageId(split_buc_idx,split_buc_page_id);
@@ -153,7 +161,6 @@ bool HASH_TABLE_TYPE::SplitInsert(Transaction *transaction, const KeyType &key, 
     auto buc_page_id = KeyToPageId(key,dir_page);
     buc_page = FetchBucketPage(buc_page_id);
   }
-  //进行插入，若失败说明存在重复
   bool success = buc_page->Insert(key,value,comparator_);
   //unpin循环中没有unpin的页面
   buffer_pool_manager_->UnpinPage(directory_page_id_,true,nullptr);

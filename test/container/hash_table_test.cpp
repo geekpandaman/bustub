@@ -127,5 +127,19 @@ TEST(HashTableTest, SampleTest) {
   delete disk_manager;
   delete bpm;
 }
+//bustub::HashTableTest_SplitTest_Test::TestBody
+TEST(HashTableTest, SplitTest) {
+  auto *disk_manager = new DiskManager("test.db");
+  auto *bpm = new BufferPoolManagerInstance(50, disk_manager);
+  ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
+  for (int i = 0; i < 4000;i++) {
+    EXPECT_TRUE(ht.Insert(nullptr, i, i));
+  }
+  ht.VerifyIntegrity();
+  disk_manager->ShutDown();
+  remove("test.db");
+  delete disk_manager;
+  delete bpm;
+}
 
 }  // namespace bustub
