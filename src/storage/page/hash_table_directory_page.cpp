@@ -46,9 +46,6 @@ void HashTableDirectoryPage::IncrGlobalDepth() {
 }
 
 void HashTableDirectoryPage::DecrGlobalDepth() {
-  //是否需要做正确性检查？
-  //TODO是否需要置-1
-  //如果不置-1的话，用global_depth来判断有效范围
   global_depth_--;
   global_depth_mask_^=1<<global_depth_;
   size_/=2;

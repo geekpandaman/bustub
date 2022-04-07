@@ -30,9 +30,9 @@ TEST(HashTableTest, SampleTest) {
   auto *disk_manager = new DiskManager("test.db");
   auto *bpm = new BufferPoolManagerInstance(50, disk_manager);
   ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
-
+  int sampleSize = 4000;
   // insert a few values
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < sampleSize; i++) {
     ht.Insert(nullptr, i, i);
     std::vector<int> res;
     ht.GetValue(nullptr, i, &res);
@@ -43,7 +43,7 @@ TEST(HashTableTest, SampleTest) {
   ht.VerifyIntegrity();
 
   // check if the inserted values are all there
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < sampleSize; i++) {
     std::vector<int> res;
     ht.GetValue(nullptr, i, &res);
     EXPECT_EQ(1, res.size()) << "Failed to keep " << i << std::endl;
@@ -53,7 +53,7 @@ TEST(HashTableTest, SampleTest) {
   ht.VerifyIntegrity();
 
   // insert one more value for each key
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < sampleSize; i++) {
     if (i == 0) {
       // duplicate values for the same key are not allowed
       EXPECT_FALSE(ht.Insert(nullptr, i, 2 * i));
@@ -80,7 +80,7 @@ TEST(HashTableTest, SampleTest) {
 
   ht.VerifyIntegrity();
 
-  for(size_t i = 0;i!=5;i++){
+  for(int i = 0;i!=sampleSize;i++){
     std::vector<int> res;
     ht.GetValue(nullptr, i, &res);
     if(i==0)
@@ -91,11 +91,11 @@ TEST(HashTableTest, SampleTest) {
 
   // look for a key that does not exist
   std::vector<int> res;
-  ht.GetValue(nullptr, 20, &res);
+  ht.GetValue(nullptr, sampleSize+5, &res);
   EXPECT_EQ(0, res.size());
 
   // delete some values
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < sampleSize; i++) {
     EXPECT_TRUE(ht.Remove(nullptr, i, i));
     std::vector<int> res;
     ht.GetValue(nullptr, i, &res);
@@ -111,7 +111,7 @@ TEST(HashTableTest, SampleTest) {
   ht.VerifyIntegrity();
 
   // delete all values
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < sampleSize; i++) {
     if (i == 0) {
       // (0, 0) has been deleted
       EXPECT_FALSE(ht.Remove(nullptr, i, 2 * i));
@@ -132,8 +132,41 @@ TEST(HashTableTest, SplitTest) {
   auto *disk_manager = new DiskManager("test.db");
   auto *bpm = new BufferPoolManagerInstance(50, disk_manager);
   ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
-  for (int i = 0; i < 4000;i++) {
+  size_t sampleSize = 4000;
+  for (size_t i = 0; i < sampleSize;i++) {
     EXPECT_TRUE(ht.Insert(nullptr, i, i));
+  }
+  ht.VerifyIntegrity();
+
+  for(size_t i = 0;i!=sampleSize;i++){
+    std::vector<int> res;
+    ht.GetValue(nullptr, i, &res);
+    EXPECT_EQ(res.size(),1);
+    EXPECT_EQ(res[0],i);
+  }
+
+  disk_manager->ShutDown();
+  remove("test.db");
+  delete disk_manager;
+  delete bpm;
+}
+//bustub::HashTableTest_MergeTest_Test::TestBody
+TEST(HashTableTest, MergeTest) {
+  auto *disk_manager = new DiskManager("test.db");
+  auto *bpm = new BufferPoolManagerInstance(50, disk_manager);
+  ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
+  size_t sampleSize = 4000;
+  for (size_t i = 0; i < sampleSize;i++) {
+    EXPECT_TRUE(ht.Insert(nullptr, i, i));
+  }
+  ht.VerifyIntegrity();
+  for (size_t i = 0; i < sampleSize;i++) {
+    bool success = ht.Remove(nullptr, i, i);
+    if(!success){
+      LOG_ERROR("Remove %d:%d failed",(int)i,(int)i);
+    }
+    if(i%100==0)
+      ht.VerifyIntegrity();
   }
   ht.VerifyIntegrity();
   disk_manager->ShutDown();
